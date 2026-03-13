@@ -178,8 +178,8 @@ export default function TwitLife() {
 
     fetchTimeline();
 
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${wsProto}//${window.location.host}/ws/timeline`);
+    const wsUrl = "wss://twitlife-production.up.railway.app/ws/timeline";
+    const ws = new WebSocket(wsUrl);
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
