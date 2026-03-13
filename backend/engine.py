@@ -7,7 +7,7 @@ import uuid
 from typing import Optional
 from dotenv import load_dotenv
 from openai import OpenAI
-import google.generativeai as genai  # Added for Gemini
+from google import genai
 
 from models import GameState, Event, Entity
 from dictionaries import get_all_dict_keys
