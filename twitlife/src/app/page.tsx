@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MessageCircle, Repeat2, Heart, BarChart2, Sparkles, CheckCircle, Home, Search, Bell, Mail, Landmark, User, Zap, MoreHorizontal, X, Image as ImageIcon } from 'lucide-react';
 
 
-const API = 'http://127.0.0.1:8000';
+const API = 'https://twitlife-production.up.railway.app';
 
 function stableViews(id: string): number {
   let hash = 0;
@@ -178,7 +178,7 @@ export default function TwitLife() {
 
     fetchTimeline();
 
-    const wsUrl = "ws://127.0.0.1:8000/ws/timeline";
+    const wsUrl = "wss://twitlife-production.up.railway.app/ws/timeline";
     const ws = new WebSocket(wsUrl);
     ws.onmessage = (event) => {
       try {
