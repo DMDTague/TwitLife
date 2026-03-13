@@ -124,34 +124,23 @@ CELEBRITY_TITANS = {
         "primary_niche": "politics",
         "real_style_examples": ["The Daily Wire drops the bombshell news that we're in production on a new action flick...", "Only President Trump had the courage to do what needs to be done in Iran."]
     },
-    "GrittyNHL": {
-        "real_name": "Gritty",
-        "handle": "GrittyNHL",
-        "faction": "Delco Trolls", "category": "Brand",
-        "system_prompt_lock": "You are Gritty. Pure chaotic Philly meme energy only.",
-        "forced_anchors": [("philly_chaos", 100), ("humor_max", 95)],
-        "allowed_domains": ["philly_memes", "hockey"],
-        "primary_niche": "philly_local",
-        "real_style_examples": ["That's REAL professional @GrittyNHL", "ur welcome", "simon says catch these hands"]
-    },
-    "MayorCherelle": {
-        "real_name": "Mayor Cherelle Parker",
-        "handle": "MayorCherelle",
-        "faction": "The Incumbents", "category": "Political",
-        "system_prompt_lock": "You are Philly's Mayor. Local governance, SEPTA, city pride only. (Note: low recent activity — use neutral official tone)",
-        "forced_anchors": [("philly_local", 95)],
-        "allowed_domains": ["philly_politics", "local_news"],
-        "primary_niche": "philly_local",
-        "real_style_examples": [],
-        "hardcoded_url": "https://unavatar.io/twitter/MayorCherelle"
+    "banksy": {
+        "real_name": "Banksy",
+        "handle": "banksy",
+        "faction": "Street Art / Subversive", "category": "Artist",
+        "system_prompt_lock": "You are Banksy. Your tweets are cryptic, artistic, and anti-establishment. Never talk about sports or local Philly drama. Focus on social commentary and the absurdity of the art world.",
+        "forced_anchors": [("traditional_art_vs_ai_generated", -100), ("public_art_graffiti_vs_sanitized_spaces", -90)],
+        "allowed_domains": ["art", "commentary", "subversion"],
+        "primary_niche": "artist",
+        "real_style_examples": ["Art is not a crime.", "The urge to destroy is also a creative urge."]
     }
 }
 
 SWARM_ARCHETYPES = [
-    "SEPTA Rider Karen", "Wawa Hoe", "Temple University Marxist",
-    "Northeast Philly Trumper", "Fishtown Hipster", "Main Line Wine Mom",
-    "Delco Troll", "South Philly Italian Uncle", "Center City Tech Bro",
-    "Philly Sports Doomer", "Liberal Uber Driver", "MAGA SEPTA Operator"
+    "Modern Artist", "Crypto Bro", "SaaS Founder", 
+    "Lifestyle Influencer", "Suburban Doomer", "Coffee Connoisseur",
+    "Tech Skeptic", "Hypebeast", "Digital Nomad", 
+    "Zen Minimalist", "Political Activist", "Casual Gamer"
 ]
 
 
@@ -190,13 +179,13 @@ def derive_trait_matrix(internal_truth: dict) -> TraitMatrix:
 
 def get_random_faction_trait_matrix(faction: str) -> TraitMatrix:
     """Assigns rough TraitMatrix values based on the Swarm Faction."""
-    if faction == "The Delco Troll":
+    if faction == "The Subversive Troll":
         return TraitMatrix(politics=random.randint(10, 60), tone=-random.randint(50, 100), hostility=random.randint(60, 100))
     elif faction == "The Political Grinder":
         return TraitMatrix(politics=random.choice([-90, 90]), tone=random.randint(50, 100), hostility=random.randint(50, 100))
-    elif faction == "The Main Line Influencer":
+    elif faction == "The Heritage Influencer":
         return TraitMatrix(politics=random.randint(-20, 20), tone=random.randint(50, 100), hostility=random.randint(-50, 0))
-    elif faction == "The Philly Doomer":
+    elif faction == "The Global Doomer":
         return TraitMatrix(politics=random.randint(-40, 40), tone=-random.randint(50, 100), hostility=random.randint(0, 50))
     else:
         return TraitMatrix(politics=random.randint(20, 80), tone=random.randint(0, 50), hostility=random.randint(-20, 20))

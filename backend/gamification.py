@@ -11,7 +11,7 @@ ACHIEVEMENTS = {
         "desc": "Trigger 5 faction quote wars", 
         "reward_verifed_badge": True
     },
-    "philly_legend": {
+    "global_titan": {
         "name": "Local God", 
         "desc": "Reach 50k followers", 
         "reward_credits": 1000
@@ -47,8 +47,8 @@ def check_achievements(entity):
         new_unlocks.append("first_dogpile")
         entity.simulated_credits = getattr(entity, 'simulated_credits', 0) + 500
         
-    if "philly_legend" not in unlocked and entity.follower_count >= 50000:
-        new_unlocks.append("philly_legend")
+    if "global_titan" not in unlocked and entity.follower_count >= 50000:
+        new_unlocks.append("global_titan")
         entity.simulated_credits = getattr(entity, 'simulated_credits', 0) + 1000
         
     if new_unlocks:

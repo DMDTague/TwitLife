@@ -514,9 +514,28 @@ Tweet: "{tweet_text}"
         self.current_day += 1
         print(f"[ENGINE] === ADVANCING TO DAY {self.current_day} ===")
         
-        # 1. Decay Heat and run Audits
+        from economy import calculate_niche_income, process_supporter_conversion
         era_data = self.era_modifers.get(self.simulation_era, self.era_modifers["Peace"])
         for entity in self.state.entities.values():
+            # Phase 27: Supporter Conversion
+            if entity.last_known_follower_count == 0:
+                entity.last_known_follower_count = entity.follower_count
+            
+            delta = entity.follower_count - entity.last_known_follower_count
+            if delta > 0:
+                process_supporter_conversion(entity, delta)
+                entity.last_known_follower_count = entity.follower_count
+            
+            # Phase 26/27: Calculate Income Breakdown
+            income_breakdown = calculate_niche_income(entity)
+            entity.monthly_income_breakdown = income_breakdown
+            
+            # Phase 27: 30-Day Payday Logic
+            if self.current_day - entity.last_payday_day >= 30:
+                entity.wealth += income_breakdown["monthly_total"]
+                entity.last_payday_day = self.current_day
+                print(f"[ECONOMY] Payday for @{entity.id}! Total: {income_breakdown['monthly_total']}")
+            
             if entity.heat > 0:
                 entity.heat = max(0, entity.heat - 5)
             
@@ -1606,6 +1625,118 @@ You MUST output a valid JSON object matching this schema exactly:
         except Exception as e:
             print(f"[ENGINE] LLM API Call failed for {npc.name}: {e}")
             return None
+
+    def generate_npc_tweet(self, npc_id: str, topic: Optional[str] = None) -> Optional[Event]:
+        """
+        Phase 25: Allows an NPC to start their own thread autonomously.
+        """
+        if not groq_client:
+            return None
+            
+        can_go, reason = self.rate_limiter.can_proceed(estimated_tokens=300)
+        if not can_go:
+            print(f"[RATE LIMIT] generate_npc_tweet for {npc_id} blocked: {reason}")
+            return None
+            
+        npc = self.state.entities.get(npc_id)
+        if not npc or npc.is_player:
+            return None
+
+        system_prompt = self.generate_llm_prompt_for_entity(npc_id)
+        
+        # Decide topic if not provided
+        if not topic:
+            trending = self.vibe_cache.get("trending_topics")
+            if trending and random.random() < 0.7:
+                topic = random.choice(trending)["topic"]
+            else:
+                top_domains = [d for d, v in npc.internal_truth.items() if v > 70]
+                topic = random.choice(top_domains) if top_domains else "life in Philly"
+
+        vibe_context = f"\n\nACTION: Start a NEW thread about '{topic}'. Do not reply to anyone. Just share your thoughts, a hot take, or a random observation in your unique voice. Keep it under 280 characters. Output as JSON with 'tweet' and 'impact_score' (0-10) keys."
+        
+        return self._call_llm_for_autonomous_action(npc_id, system_prompt, vibe_context)
+
+    def _call_llm_for_autonomous_action(self, npc_id: str, system_prompt: str, vibe_context: str) -> Optional[Event]:
+        """
+        Helper to centralize LLM calling and event creation for autonomous posts.
+        """
+        npc = self.state.entities.get(npc_id)
+        
+        user_msg = f"Timeline Context: {vibe_context}\n\nWhat do you post right now?"
+
+        try:
+            response = groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_msg}
+                ],
+                max_tokens=150,
+                temperature=0.8,
+                response_format={"type": "json_object"}
+            )
+            ai_data = json.loads(response.choices[0].message.content.strip())
+            content = ai_data.get("tweet", "").strip()
+            
+            # Phase 19: Record token usage
+            tokens_used = getattr(response.usage, 'total_tokens', 300) if hasattr(response, 'usage') else 300
+            self.rate_limiter.record_usage(tokens_used)
+
+            # Analyze impact of this new post
+            impact_vectors = self.analyze_tweet_vibe(content)
+            
+            new_event = Event(
+                id=str(uuid.uuid4()),
+                type="tweet",
+                content=content,
+                initiator_id=npc_id,
+                visibility="Public",
+                impact_vectors=impact_vectors
+            )
+            return new_event
+        except Exception as e:
+            print(f"[ENGINE] Autonomous LLM Action failed for {npc.name}: {e}")
+            return None
+
+    def orchestrate_chaos_pulse(self) -> list[Event]:
+        """
+        Phase 25: Selection loop that makes the world run wild.
+        """
+        recent_events = [ev for ev in self.state.events if ev.visibility == "Public"][-20:]
+        active_npcs = [e for e in self.state.entities.values() if not e.is_player and e.status == "Active"]
+        
+        if not active_npcs:
+            return []
+            
+        # Select 2-4 random NPCs to act
+        count = random.randint(2, 4)
+        selected = random.sample(active_npcs, min(len(active_npcs), count))
+        generated_events = []
+        
+        for npc in selected:
+            action_roll = random.random()
+            
+            if action_roll < 0.4 and recent_events:
+                # 40% chance to react to something recent
+                trigger = random.choice(recent_events)
+                if trigger.initiator_id == npc.id: continue # Don't react to self
+                
+                evt = self.generate_npc_reaction(npc.id, trigger)
+                if evt:
+                    self.process_action(evt)
+                    generated_events.append(evt)
+                    
+            elif action_roll < 0.8:
+                # 40% chance to start a new thread
+                evt = self.generate_npc_tweet(npc.id)
+                if evt:
+                    self.process_action(evt)
+                    generated_events.append(evt)
+            
+            # 20% chance they just lurk
+            
+        return generated_events
 
     def force_bot_engagement(self, event_id: str, count: int = 5):
         """

@@ -26,6 +26,7 @@ type Identity = { handle: string; name: string; desc: string; profile_image_url?
 
 export default function TwitLife() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [events, setEvents] = useState<any[]>([]);
   const [postContent, setPostContent] = useState("");
   const [identity, setIdentity] = useState<Identity | null>(null);
@@ -35,19 +36,28 @@ export default function TwitLife() {
   const [isDogpiled, setIsDogpiled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [postStatus, setPostStatus] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [notifications, setNotifications] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [messages, setMessages] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [trending, setTrending] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activePulse, setActivePulse] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [neighborhoodFeed, setNeighborhoodFeed] = useState<any[]>([]);
   const [selectedHood, setSelectedHood] = useState<string | null>(null);
   const [hoodDesc, setHoodDesc] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [playerProfile, setPlayerProfile] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [playerVibe, setPlayerVibe] = useState<any[]>([]);
   const [currentDay, setCurrentDay] = useState(1);
+  const [lastPaydayDay, setLastPaydayDay] = useState(0);
   const [isAdvancingDay, setIsAdvancingDay] = useState(false);
 
   // Gamification (Phase 22)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [quests, setQuests] = useState<any[]>([]);
   const [influenceRank, setInfluenceRank] = useState<number>(1);
   const [achievements, setAchievements] = useState<string[]>([]);
@@ -60,8 +70,10 @@ export default function TwitLife() {
   const [attachMedia, setAttachMedia] = useState(false);
 
   // Phase 23: Crucible & Cancellation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [crisisResponse, setCrisisResponse] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [verdictResult, setVerdictResult] = useState<any>(null);
 
   // Phase 24: Strategy
@@ -75,20 +87,45 @@ export default function TwitLife() {
   const [playerAuraDebt, setPlayerAuraDebt] = useState(0);
   const [isGriefingAccount, setIsGriefingAccount] = useState(false);
   const [selectedNiche, setSelectedNiche] = useState("general");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nicheKings, setNicheKings] = useState<any[]>([]);
   const [vanguardTab, setVanguardTab] = useState<'global' | 'niche'>('global');
   const [playerNicheRank, setPlayerNicheRank] = useState(0);
   const [playerGlobalRank, setPlayerGlobalRank] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [vanguard, setVanguard] = useState<any[]>([]);
   const [simulationEra, setSimulationEra] = useState("Peace");
+  const [isChaosMode, setIsChaosMode] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("twitlife_identity");
-    if (stored) {
-      try { setIdentity(JSON.parse(stored)); } catch { }
+    // Phase 25: Support entity_id from URL to override localStorage
+    const params = new URLSearchParams(window.location.search);
+    const urlEntityId = params.get('entity_id');
+
+    if (urlEntityId) {
+      // Don't set identity yet; wait for verifyIdentity to check if profile exists
+      verifyIdentity(urlEntityId);
+    } else {
+      const stored = localStorage.getItem("twitlife_identity");
+      if (stored) {
+        try { setIdentity(JSON.parse(stored)); } catch { }
+      }
     }
     setHasHydrated(true);
   }, []);
+
+  const verifyIdentity = async (handle: string) => {
+    try {
+      const resp = await fetch(`${API}/api/timeline?entity_id=${handle}`);
+      if (resp.ok) {
+        setIdentity({ handle, name: handle, desc: "" });
+      } else {
+        setIdentity(null);
+      }
+    } catch {
+      setIdentity(null);
+    }
+  };
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [retweetedPosts, setRetweetedPosts] = useState<Set<string>>(new Set());
   const composeRef = useRef<HTMLTextAreaElement>(null);
@@ -97,14 +134,22 @@ export default function TwitLife() {
   useEffect(() => {
     if (!identity) return;
 
-    // Initial fetch to populate state
     const fetchTimeline = async () => {
+      setLoading(true);
       try {
         const res = await fetch(`${API}/api/timeline?entity_id=${identity.handle}`);
+        if (res.status === 404) {
+          console.error("Identity not found in backend. Resetting session.");
+          localStorage.removeItem("twitlife_identity");
+          setIdentity(null);
+          return;
+        }
         if (!res.ok) throw new Error("Backend unreachable");
         const data = await res.json();
         const timeline = data.timeline || data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setEvents(Array.isArray(timeline) ? timeline.filter((e: any) => e !== null) : []);
+
         if (data.player_aura !== undefined) setPlayerAura(data.player_aura);
         if (data.simulated_credits !== undefined) setPlayerCredits(data.simulated_credits);
         if (data.player_wealth !== undefined) setPlayerWealth(data.player_wealth);
@@ -120,19 +165,26 @@ export default function TwitLife() {
         if (data.player_haters !== undefined) setPlayerHaters(data.player_haters);
         if (data.player_aura_debt !== undefined) setPlayerAuraDebt(data.player_aura_debt);
         if (data.is_griefing_account !== undefined) setIsGriefingAccount(data.is_griefing_account);
-      } catch { console.error("Simulation offline."); }
+        if (data.last_payday_day !== undefined) setLastPaydayDay(data.last_payday_day);
+        if (data.monthly_income_breakdown) {
+          setPlayerProfile((prev: any) => ({ ...prev, monthly_income_breakdown: data.monthly_income_breakdown }));
+        }
+      } catch (e) {
+        console.error("Simulation offline or fetch error:", e);
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchTimeline();
 
-    // Phase 22: Replace 4s Polling Hell with Real-Time WebSockets
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/timeline");
+    const wsUrl = "ws://127.0.0.1:8000/ws/timeline";
+    const ws = new WebSocket(wsUrl);
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "new_event") {
-          // Instantly push new events to the top of the feed
           setEvents(prev => {
-            // Prevent duplicates if already fetched via initial load or other means
             if (prev.some(p => p.id === data.payload.id)) return prev;
             return [data.payload, ...prev];
           });
@@ -141,7 +193,8 @@ export default function TwitLife() {
         console.error("WS parse error", e);
       }
     };
-    return () => ws.close();
+    ws.onerror = (err) => console.error("WS connection error:", err);
+    return () => { ws.close(); };
   }, [identity]);
 
   useEffect(() => {
@@ -163,9 +216,11 @@ export default function TwitLife() {
         if (data.player_haters !== undefined) setPlayerHaters(data.player_haters);
         if (data.player_aura_debt !== undefined) setPlayerAuraDebt(data.player_aura_debt);
         if (data.is_griefing_account !== undefined) setIsGriefingAccount(data.is_griefing_account);
+        if (data.chaos_mode_enabled !== undefined) setIsChaosMode(data.chaos_mode_enabled);
+        if (data.last_payday_day !== undefined) setLastPaydayDay(data.last_payday_day);
       } catch { }
     }, 45000);
-    return () => clearInterval(heartbeat);
+    return () => { clearInterval(heartbeat); };
   }, [identity]);
 
   useEffect(() => {
@@ -187,19 +242,19 @@ export default function TwitLife() {
   useEffect(() => {
     if (!identity) return;
     const f = async () => { try { const r = await fetch(`${API}/api/trending`); const d = await r.json(); setTrending(d.trending || []); } catch { } };
-    f(); const i = setInterval(f, 30000); return () => clearInterval(i);
+    f(); const i = setInterval(f, 30000); return () => { clearInterval(i); };
   }, [identity]);
 
   useEffect(() => {
     if (!identity) return;
     const f = async () => { try { const r = await fetch(`${API}/api/active_pulse`); const d = await r.json(); setActivePulse(d.active_pulse); } catch { } };
-    f(); const i = setInterval(f, 15000); return () => clearInterval(i);
+    f(); const i = setInterval(f, 15000); return () => { clearInterval(i); };
   }, [identity]);
 
   useEffect(() => {
     if (!identity || activeTab !== 'Notifications') return;
     const f = async () => { try { const r = await fetch(`${API}/api/notifications?entity_id=${identity.handle}`); const d = await r.json(); setNotifications(d.notifications || []); } catch { } };
-    f(); const i = setInterval(f, 10000); return () => clearInterval(i);
+    f(); const i = setInterval(f, 10000); return () => { clearInterval(i); };
   }, [identity, activeTab]);
 
   useEffect(() => {
@@ -227,7 +282,9 @@ export default function TwitLife() {
       const colors = {
         "The Delco Troll": "5e0000",
         "The Main Line Influencer": "ffd700",
-        "The Philly Doomer": "000080"
+        "The Global Doomer": "000080",
+        "The Subversive Troll": "FF0000",
+        "The Heritage Influencer": "FFD700"
       };
       const bg = colors[faction as keyof typeof colors] || "b6e3f4";
       return `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=${bg}`;
@@ -235,6 +292,7 @@ export default function TwitLife() {
     return `https://unavatar.io/twitter/${seed}`;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Avatar = ({ src, handle, aura, auraDebt, isVerified, size = "w-10 h-10", className = "" }: any) => {
     const ringClass = aura > 5000 ? "aura-ring-gold" : auraDebt > 0 ? "aura-ring-red animate-pulse" : "";
     const shapeClass = isVerified ? "hexagon-clip" : "rounded-full";
@@ -261,7 +319,7 @@ export default function TwitLife() {
     setAttachMedia(false);
     setPostStatus("posting");
     try { await fetch(`${API}/api/post_tweet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiator_id: identity?.handle, content: tempPost.content, media_url: tempMediaUrl }) }); setPostStatus("success"); } catch { setPostStatus("error"); }
-    setTimeout(() => setPostStatus(null), 3000);
+    setTimeout(() => { setPostStatus(null); }, 3000);
   };
 
   const handleInteraction = async (eventId: string, type: 'like' | 'retweet') => {
@@ -273,6 +331,7 @@ export default function TwitLife() {
       if (retweetedPosts.has(eventId)) return;
       setRetweetedPosts(new Set([...retweetedPosts, eventId]));
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setEvents(events.map((ev: any) => {
       if (ev.id === eventId) {
         const newEv = { ...ev };
@@ -293,6 +352,7 @@ export default function TwitLife() {
   };
 
   const handleBuyBots = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const latestPost = events.find((ev: any) => ev.initiator_id === identity?.handle);
     if (!latestPost) { alert("Post something first!"); return; }
     try {
@@ -315,7 +375,7 @@ export default function TwitLife() {
         }
       }
     } catch { }
-    setTimeout(() => setIsAdvancingDay(false), 2000); // Fake delay for UX weight
+    setTimeout(() => { setIsAdvancingDay(false); }, 2000); // Fake delay for UX weight
   };
 
   const submitCrisisResponse = async () => {
@@ -355,20 +415,21 @@ export default function TwitLife() {
     { name: 'Profile', icon: User },
   ];
   const neighborhoods = [
-    { name: 'Fishtown', emoji: '🎨', vibe: 'Artistic & DIY' },
-    { name: 'The Northeast', emoji: '🦅', vibe: 'Old-school Philly' },
-    { name: 'Main Line', emoji: '💎', vibe: 'Wealthy suburbs' },
+    { name: 'The Gallery District', emoji: '🎨', vibe: 'Creative & DIY' },
+    { name: 'The Industrial Hub', emoji: '🏭', vibe: 'Legacy Industry' },
+    { name: 'The Financial Plaza', emoji: '🏛️', vibe: 'Elite Wealth' },
   ];
 
   const charPercent = Math.min(100, (postContent.length / 280) * 100);
   const charColor = postContent.length > 260 ? '#F4212E' : postContent.length > 240 ? '#FFD400' : '#1D9BF0';
 
   // === COMPONENTS ===
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const PostCard = ({ post }: { post: any }) => {
     const isLiked = likedPosts.has(post.id);
     const isRetweeted = retweetedPosts.has(post.id);
     return (
-      <div className="tweet-hover flex gap-3 px-4 py-3 border-b border-[#2F3336] cursor-pointer animate-fadeIn" onClick={() => router.push(`/tweet/${post.id}`)}>
+      <div className="tweet-hover flex gap-3 px-4 py-3 border-b border-[#2F3336] cursor-pointer animate-fadeIn" onClick={() => { router.push(`/tweet/${post.id}`); }}>
         <Link href={`/profile/${post.initiator_id}`} onClick={e => e.stopPropagation()}>
           <Avatar
             src={post.initiator_profile_image_url}
@@ -385,7 +446,7 @@ export default function TwitLife() {
             <span className="text-[#71767B] truncate">@{post.initiator_id}</span>
             <span className="text-[#71767B]">·</span>
             <span className="text-[#71767B] text-sm shrink-0 hover:underline">{timeAgo(post.timestamp)}</span>
-            <button onClick={e => e.stopPropagation()} className="ml-auto p-1.5 rounded-full hover:bg-[#1D9BF0]/10 hover:text-[#1D9BF0] text-[#71767B] transition shrink-0">
+            <button onClick={e => { e.stopPropagation(); }} className="ml-auto p-1.5 rounded-full hover:bg-[#1D9BF0]/10 hover:text-[#1D9BF0] text-[#71767B] transition shrink-0">
               <MoreHorizontal className="w-[18px] h-[18px]" />
             </button>
           </div>
@@ -447,12 +508,12 @@ export default function TwitLife() {
           <p className="text-[#71767B] text-[15px] text-center mb-8">Create your account to enter the AI social simulation.</p>
           <div className="space-y-4">
             <div className="relative">
-              <input value={setupName} onChange={e => setSetupName(e.target.value)} placeholder=" "
+              <input value={setupName} onChange={e => { setSetupName(e.target.value); }} placeholder=" "
                 className="peer w-full bg-black border border-[#333639] rounded text-[17px] text-[#E7E9EA] px-3 pt-6 pb-2 outline-none focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0] transition" />
               <label className="absolute left-3 top-2 text-[13px] text-[#71767B] peer-placeholder-shown:top-4 peer-placeholder-shown:text-[17px] peer-focus:top-2 peer-focus:text-[13px] peer-focus:text-[#1D9BF0] transition-all pointer-events-none">Display Name</label>
             </div>
             <div className="relative">
-              <input value={setupHandle} onChange={e => setSetupHandle(e.target.value)} placeholder=" "
+              <input value={setupHandle} onChange={e => { setSetupHandle(e.target.value); }} placeholder=" "
                 className="peer w-full bg-black border border-[#333639] rounded text-[17px] text-[#E7E9EA] px-3 pt-6 pb-2 outline-none focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0] transition" />
               <label className="absolute left-3 top-2 text-[13px] text-[#71767B] peer-placeholder-shown:top-4 peer-placeholder-shown:text-[17px] peer-focus:top-2 peer-focus:text-[13px] peer-focus:text-[#1D9BF0] transition-all pointer-events-none">@handle</label>
             </div>
@@ -464,14 +525,16 @@ export default function TwitLife() {
             <label className="text-[15px] font-bold text-[#E7E9EA] px-1">Choose Your Niche</label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { id: 'combat_sports', name: 'Combat Sports', icon: '🥊', desc: 'High aggression' },
+                { id: 'streamer', name: 'Streamer', icon: '📽️', desc: 'MRR Pyramid' },
                 { id: 'tech', name: 'Tech & AI', icon: '🤖', desc: 'High wealth' },
                 { id: 'gaming', name: 'Console Gaming', icon: '🎮', desc: 'Stan shields' },
-                { id: 'philly_local', name: 'Philly Local', icon: '🔔', desc: 'High engagement' }
+                { id: 'artist', name: 'Artist', icon: '🎨', desc: 'Patron MRR' },
+                { id: 'music', name: 'Musician', icon: '🎸', desc: 'Streaming rev' },
+                { id: 'combat_sports', name: 'Combat Sports', icon: '🥊', desc: 'PPV points' }
               ].map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => setSelectedNiche(n.id)}
+                  onClick={() => { setSelectedNiche(n.id); }}
                   className={`flex flex-col items-start p-3 rounded-xl border transition ${selectedNiche === n.id ? 'border-[#1D9BF0] bg-[#1D9BF0]/10' : 'border-[#333639] hover:bg-[#1D9BF0]/5'}`}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -519,7 +582,7 @@ export default function TwitLife() {
         </Link>
         <nav className="mt-0.5 space-y-0.5 w-full">
           {navItems.map(({ name, icon: Icon }) => (
-            <button key={name} onClick={() => setActiveTab(name)}
+            <button key={name} onClick={() => { setActiveTab(name); }}
               className={`nav-pill flex items-center gap-5 w-fit xl:pr-6 ${activeTab === name ? 'font-bold' : 'font-normal text-[#E7E9EA]'}`}>
               <Icon className="w-[26px] h-[26px]" strokeWidth={activeTab === name ? 2.5 : 1.5} />
               <span className="hidden xl:inline text-xl">{name}</span>
@@ -535,7 +598,7 @@ export default function TwitLife() {
           <Zap className="w-5 h-5" />
         </Link>
         {/* Mini Profile */}
-        <button onClick={() => setActiveTab('Profile')} className="mt-auto mb-3 flex items-center gap-3 p-3 rounded-full hover:bg-[#E7E9EA]/10 transition w-full xl:w-auto">
+        <button onClick={() => { setActiveTab('Profile'); }} className="mt-auto mb-3 flex items-center gap-3 p-3 rounded-full hover:bg-[#E7E9EA]/10 transition w-full xl:w-auto">
           <Avatar
             src={playerProfile?.profile_image_url}
             handle={identity.handle}
@@ -560,6 +623,15 @@ export default function TwitLife() {
             <span className="text-[13px] font-bold text-[#7856FF] uppercase tracking-wider">World Pulse: {activePulse.topic}</span>
           </div>
         )}
+        {isChaosMode && (
+          <div className="bg-[#7856FF]/10 border-b border-[#7856FF]/30 px-4 py-1.5 text-center">
+            <span className="text-[11px] font-black text-[#7856FF] uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+              <span className="w-1.5 h-1.5 bg-[#7856FF] rounded-full animate-ping" />
+              Chaos Mode Active — Autonomous Network Activity Live
+            </span>
+          </div>
+        )}
+
         {isDogpiled && (
           <div className="bg-[#F4212E]/10 border-b border-[#F4212E]/30 px-4 py-2 text-center animate-pulse">
             <span className="text-[13px] font-bold text-[#F4212E]">⚠️ You are being dogpiled — incoming hostility detected</span>
@@ -590,8 +662,8 @@ export default function TwitLife() {
                 </div>
               </div>
               <div className="flex mt-1">
-                <button onClick={() => setFeedTab('foryou')} className={`flex-1 py-3 text-[15px] font-bold text-center hover:bg-[#E7E9EA]/10 transition relative ${feedTab === 'foryou' ? 'text-[#E7E9EA] tab-active' : 'text-[#71767B]'}`}>For you</button>
-                <button onClick={() => setFeedTab('following')} className={`flex-1 py-3 text-[15px] font-bold text-center hover:bg-[#E7E9EA]/10 transition relative ${feedTab === 'following' ? 'text-[#E7E9EA] tab-active' : 'text-[#71767B]'}`}>Following</button>
+                <button onClick={() => { setFeedTab('foryou'); }} className={`flex-1 py-3 text-[15px] font-bold text-center hover:bg-[#E7E9EA]/10 transition relative ${feedTab === 'foryou' ? 'text-[#E7E9EA] tab-active' : 'text-[#71767B]'}`}>For you</button>
+                <button onClick={() => { setFeedTab('following'); }} className={`flex-1 py-3 text-[15px] font-bold text-center hover:bg-[#E7E9EA]/10 transition relative ${feedTab === 'following' ? 'text-[#E7E9EA] tab-active' : 'text-[#71767B]'}`}>Following</button>
               </div>
             </div>
           ) : (
@@ -629,7 +701,7 @@ export default function TwitLife() {
                   isVerified={playerProfile?.is_verified}
                 />
                 <div className="flex-1 min-w-0">
-                  <textarea ref={composeRef} value={postContent} onChange={e => setPostContent(e.target.value)}
+                  <textarea ref={composeRef} value={postContent} onChange={e => { setPostContent(e.target.value); }}
                     placeholder="What is happening?!" rows={2}
                     className="w-full bg-transparent text-xl text-[#E7E9EA] outline-none resize-none py-2 placeholder-[#536471] leading-6"
                     onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) handlePost(); }} />
@@ -660,7 +732,15 @@ export default function TwitLife() {
 
               {/* Timeline */}
               <div className="pb-20">
-                {events.length === 0 ? (<><SkeletonPost /><SkeletonPost /><SkeletonPost /><SkeletonPost /></>) : (
+                {loading ? (
+                  <><SkeletonPost /><SkeletonPost /><SkeletonPost /><SkeletonPost /></>
+                ) : events.length === 0 ? (
+                  <div className="p-8 text-center bg-[#16181C] m-4 rounded-xl border border-[#2F3336]">
+                    <Sparkles className="w-8 h-8 text-[#7856FF] mx-auto mb-3 opacity-50" />
+                    <h3 className="text-[#E7E9EA] font-bold">The city is quiet...</h3>
+                    <p className="text-[#71767B] text-sm mt-1">Autonomous activity will begin shortly.</p>
+                  </div>
+                ) : (
                   events.filter(p => !p.reply_to_id || feedTab === 'following').map((post: any) => <PostCard key={post.id} post={post} />)
                 )}
               </div>
@@ -797,14 +877,14 @@ export default function TwitLife() {
               {/* Leaderboard Toggle (Phase 24.2) */}
               <div className="flex border-b border-[#2F3336]">
                 <button
-                  onClick={() => setVanguardTab('global')}
+                  onClick={() => { setVanguardTab('global'); }}
                   className={`flex-1 py-3.5 text-[15px] font-bold hover:bg-[#E7E9EA]/10 transition relative ${vanguardTab === 'global' ? 'text-[#E7E9EA]' : 'text-[#71767B]'}`}
                 >
                   Global Top 100
                   {vanguardTab === 'global' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-[#1D9BF0] rounded-full" />}
                 </button>
                 <button
-                  onClick={() => setVanguardTab('niche')}
+                  onClick={() => { setVanguardTab('niche'); }}
                   className={`flex-1 py-3.5 text-[15px] font-bold hover:bg-[#E7E9EA]/10 transition relative ${vanguardTab === 'niche' ? 'text-[#E7E9EA]' : 'text-[#71767B]'}`}
                 >
                   {selectedNiche.replace('_', ' ').toUpperCase()} Kings
@@ -822,6 +902,7 @@ export default function TwitLife() {
                 {(vanguardTab === 'global' ? vanguard : nicheKings).length === 0 ? (
                   <div className="p-12 text-center text-[#71767B]">Ascending the ranks...</div>
                 ) : (
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   (vanguardTab === 'global' ? vanguard : nicheKings).map((entry: any, idx: number) => (
                     <div key={idx} className={`flex items-center gap-4 px-4 py-4 hover:bg-[#E7E9EA]/[0.02] transition-colors ${entry.handle === identity?.handle || entry.id === identity?.handle ? 'bg-[#1D9BF0]/5 border-l-2 border-l-[#1D9BF0]' : ''}`}>
                       <div className="w-8 text-center font-black text-[#536471] text-lg">
@@ -995,8 +1076,9 @@ export default function TwitLife() {
                 )}
 
                 {/* Recent Posts */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {playerProfile?.recent_posts?.map((p: any) => (
-                  <div key={p.id} className="tweet-hover px-0 py-3 border-b border-[#2F3336] cursor-pointer" onClick={() => router.push(`/tweet/${p.id}`)}>
+                  <div key={p.id} className="tweet-hover px-0 py-3 border-b border-[#2F3336] cursor-pointer" onClick={() => { router.push(`/tweet/${p.id}`); }}>
                     <p className="text-[15px] leading-5">{p.content}</p>
                     <span className="text-[13px] text-[#71767B] mt-1 block">{timeAgo(p.timestamp)}</span>
                   </div>
@@ -1015,26 +1097,56 @@ export default function TwitLife() {
           <input type="text" placeholder="Search" className="bg-transparent outline-none w-full text-[15px] text-[#E7E9EA] placeholder-[#71767B]" />
         </div >
 
-        {/* Aura Status */}
-        < div className="game-card" >
-          <div className="px-4 py-3 border-b border-[#2F3336]">
-            <h2 className="text-xl font-extrabold">Your Aura</h2>
+        {/* Financial Terminal / Supporter Pyramid (Phase 26) */}
+        <div className="game-card bg-gradient-to-br from-[#16181C] to-black border-[#2F3336]">
+          <div className="px-4 py-3 border-b border-[#2F3336] flex justify-between items-center">
+            <h2 className="text-[17px] font-black uppercase tracking-widest text-[#71767B]">Financial Terminal</h2>
+            <Landmark className="w-4 h-4 text-[#FFD400]" />
           </div>
-          <div className="px-4 py-4">
-            <div className="flex items-center justify-between">
+          <div className="px-4 py-4 space-y-5">
+            <div className="flex justify-between items-end">
               <div>
-                <div className="text-3xl font-extrabold text-[#1D9BF0] aura-glow">{playerAura.toLocaleString()}</div>
-                <div className={`text-[13px] font-bold mt-0.5 ${playerAura >= 1500 ? 'text-[#00BA7C]' : 'text-[#F4212E]'}`}>
-                  {playerAura >= 1500 ? '▲ Trending Up' : '▼ Declining'}
+                <div className="text-[11px] font-bold text-[#71767B] uppercase mb-1">Total Wealth</div>
+                <div className="text-3xl font-black text-[#E7E9EA] tracking-tighter">
+                  <span className="text-[#FFD400] mr-1">₵</span>
+                  {playerWealth.toLocaleString()}
                 </div>
               </div>
-              <div className="aura-badge">₵ {playerCredits}</div>
+              <div className="text-right">
+                <div className="text-[11px] font-bold text-[#71767B] uppercase mb-1">Aura Rank</div>
+                <div className="text-xl font-black text-[#1D9BF0]">{playerAura.toLocaleString()}</div>
+              </div>
             </div>
-            <div className="w-full bg-[#2F3336] h-1.5 rounded-full overflow-hidden mt-2">
-              <div className="bg-[#1D9BF0] h-full" style={{ width: '65%' }} />
+
+            {/* Supporter Pyramid Breakdown */}
+            {playerProfile?.monthly_income_breakdown?.segments && (
+              <div className="space-y-2 pt-2 border-t border-[#2F3336]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[11px] font-black text-[#71767B] uppercase">Supporter Pyramid</span>
+                  <span className="text-[11px] font-bold text-[#00BA7C]">
+                    Next Payout: Day {lastPaydayDay + 30}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {Object.entries(playerProfile.monthly_income_breakdown.segments).map(([label, value]: [string, any]) => (
+                    <div key={label} className="flex justify-between items-center text-[13px]">
+                      <span className="text-[#71767B]">{label}</span>
+                      <span className="font-mono font-bold text-[#E7E9EA]">
+                        {typeof value === 'number' && (label.includes('Subs') || label.includes('Patrons') || label.includes('Collectors') || label.includes('Whales') || label.includes('Users') || label.includes('Clients') || label.includes('Followers'))
+                          ? value.toLocaleString()
+                          : value > 1000 ? `$${(value / 1000).toFixed(1)}k` : `$${value}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="w-full bg-[#2F3336] h-1 rounded-full overflow-hidden">
+              <div className="bg-gradient-to-r from-[#FFD400] to-[#00BA7C] h-full" style={{ width: '45%' }} />
             </div>
           </div>
-        </div >
+        </div>
 
         {/* Heat Meter (Phase 24) */}
         < div className="game-card" >
@@ -1069,7 +1181,7 @@ export default function TwitLife() {
             ) : (
               trending.map((t: any, i: number) => (
                 <div key={i} className="trend-item">
-                  <div className="text-[13px] text-[#71767B]">Trending in Philly</div>
+                  <div className="text-[13px] text-[#71767B]">Trending Globally</div>
                   <div className="font-bold text-[15px] capitalize">{(t.trait || `Topic ${i + 1}`).replace(/_/g, ' ')}</div>
                   <div className="text-[13px] text-[#71767B]">{t.count || '—'} posts</div>
                 </div>

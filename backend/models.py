@@ -89,6 +89,12 @@ class Entity(BaseModel):
     aura_debt_posts: int = 0
     is_griefing_account: bool = False
     unlocked_premium_avatars: bool = False
+    monthly_income_breakdown: Dict[str, any] = Field(default_factory=dict) # Phase 26: Supporter Pyramid
+    last_payday_day: int = 0
+    t1_supporters: int = 0
+    t2_supporters: int = 0
+    t3_supporters: int = 0
+    last_known_follower_count: int = 0
 
 VisibilityType = Literal['Public', 'Private', 'Sub-group']
 
