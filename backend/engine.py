@@ -7,7 +7,7 @@ import uuid
 from typing import Optional
 from dotenv import load_dotenv
 from openai import OpenAI
-from google import genai
+from google import genai  # The new 2026 SDK
 
 from models import GameState, Event, Entity
 from dictionaries import get_all_dict_keys
@@ -29,9 +29,11 @@ except Exception as e:
 
 # 2. Initialize Gemini (Primary)
 try:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    # Correct 2026 Implementation
+    gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    gemini_model = "gemini-1.5-flash"
 except Exception as e:
+    gemini_client = None
     gemini_model = None
     print(f"Failed to initialize Gemini client: {e}")
 
