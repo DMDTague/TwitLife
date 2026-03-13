@@ -7,12 +7,17 @@ import uuid
 from typing import Optional
 from dotenv import load_dotenv
 from openai import OpenAI
+import google.generativeai as genai  # Added for Gemini
 
 from models import GameState, Event, Entity
 from dictionaries import get_all_dict_keys
 from fandom_math import FactionMath
 
 load_dotenv()
+
+# --- INITIALIZE BRAINS ---
+
+# 1. Initialize Groq (Fallback)
 try:
     groq_client = OpenAI(
         base_url="https://api.groq.com/openai/v1",
@@ -22,14 +27,21 @@ except Exception as e:
     groq_client = None
     print(f"Failed to initialize Groq client: {e}")
 
+# 2. Initialize Gemini (Primary)
+try:
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    gemini_model = None
+    print(f"Failed to initialize Gemini client: {e}")
+
 
 class GameEngine:
     def __init__(self, state: GameState):
         self.state = state
-        self.current_day = 1 # Track in-game days
+        self.current_day = 1
         self.active_pulse = None
-        self.on_new_event = None # Stores {topic, protagonist_name, timestamp}
-        
+        self.on_new_event = None
         # Phase 24: Strategy & Warfare
         self.simulation_era = "Peace" # Peace, Bloodbath, Purge
         self.era_modifers = {
@@ -68,57 +80,55 @@ class GameEngine:
         
     def analyze_tweet_vibe(self, tweet_text: str) -> dict:
         """
-        Uses Groq API to extract hidden 'impact_vectors' from a tweet text.
-        Returns a dictionary of vibe categories and their -100 to 100 scores.
-        Rate-limited via Phase 19 guardrails.
+        Uses Gemini (Primary) or Groq (Fallback) to extract impact_vectors.
         """
-        if not groq_client:
+        if not gemini_model and not groq_client:
+            print("[ENGINE] No AI clients available.")
             return {}
         
-        # Phase 19: Rate limit check
         can_go, reason = self.rate_limiter.can_proceed(estimated_tokens=400)
         if not can_go:
             print(f"[RATE LIMIT] analyze_tweet_vibe blocked: {reason}")
             return {}
 
         master_keys = get_all_dict_keys()
-        
         prompt = f'''
-You are an advanced social sentiment analyzer. Read the following tweet and extract its hidden social, ideological, or lifestyle metadata.
-Identify the top 1 to 4 most relevant "vibe" categories FROM THE SPECIFIC LIST BELOW.
-You MUST ONLY use exact keys from this list. Do not invent your own.
-Assign a score from -100 to 100 for each, representing where the tweet falls on that scale.
+        Read the following tweet and extract its hidden social/lifestyle metadata.
+        Top 1-4 relevant "vibe" categories FROM THIS LIST: {master_keys}
+        Assign a score from -100 to 100 for each.
+        Output valid JSON only: {{"impact_vectors": {{"key": score}}}}
+        Tweet: "{tweet_text}"
+        '''
 
-Master Key List:
-{master_keys}
+        # TRY GEMINI FIRST
+        if gemini_model:
+            try:
+                response = gemini_model.generate_content(
+                    prompt,
+                    generation_config={"response_mime_type": "application/json"}
+                )
+                vectors = json.loads(response.text).get("impact_vectors", {})
+                self.rate_limiter.record_usage(400) # Simple fallback if usage tracking not in gemini
+                return vectors
+            except Exception as e:
+                print(f"[ENGINE] Gemini Vibe Analysis Failed, falling back: {e}")
 
-Ensure you output a valid JSON object with EXACTLY this structure:
-{{
-  "impact_vectors": {{
-    "exact_key_from_list": score,
-    ...
-  }}
-}}
-
-Tweet: "{tweet_text}"
-'''
-        try:
-            response = groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-                max_tokens=200,
-                temperature=0.3
-            )
-            data = json.loads(response.choices[0].message.content.strip())
-            vectors = data.get("impact_vectors", {})
-            # Phase 19: Record token usage
-            tokens_used = getattr(response.usage, 'total_tokens', 400) if hasattr(response, 'usage') else 400
-            self.rate_limiter.record_usage(tokens_used)
-            return vectors
-        except Exception as e:
-            print(f"[ENGINE] Vibe Analysis Failed: {e}")
-            return {}
+        # FALLBACK TO GROQ
+        if groq_client:
+            try:
+                response = groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+                vectors = json.loads(response.choices[0].message.content).get("impact_vectors", {})
+                tokens_used = getattr(response.usage, 'total_tokens', 400) if hasattr(response, 'usage') else 400
+                self.rate_limiter.record_usage(tokens_used)
+                return vectors
+            except Exception as e:
+                print(f"[ENGINE] Groq Fallback Failed: {e}")
+        
+        return {}
 
     def process_action(self, event: Event):
         """
