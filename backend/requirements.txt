@@ -5,3 +5,5 @@ pydantic
 python-multipart
 python-dotenv
 openai
+numpy
+pandas
