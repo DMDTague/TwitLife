@@ -1,15 +1,17 @@
-# Python
+# Database
+*.db
+*.sqlite3
+
+# Python junk
 __pycache__/
 *.py[cod]
 *$py.class
-venv/
-.venv/
-.env
 
-# Node
+# Mac junk
+.DS_Store
+
+# Node junk
 node_modules/
 .next/
-dist/
+out/
 build/
-.DS_Store
-*.local
