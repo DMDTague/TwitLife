@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MessageCircle, Repeat2, Heart, BarChart2, Sparkles, CheckCircle, Home, Search, Bell, Mail, Landmark, User, Zap, MoreHorizontal, X, Image as ImageIcon } from 'lucide-react';
 
 
-const API = '';
+const API = '/api'; // This forces a logic change that Vercel cannot ignore
 
 function stableViews(id: string): number {
   let hash = 0;
