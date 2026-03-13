@@ -11,7 +11,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        fetch(`https://twitlife-production.up.railway.app/api/profile/${params.id}`)
+        fetch(`/api/profile/${params.id}`)
             .then(res => res.json())
             .then(data => setUser(data))
             .catch(e => console.error(e));

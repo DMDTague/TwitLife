@@ -10,7 +10,7 @@ export default function ProfileEditor() {
     const handleSave = async () => {
         setLoading(true);
         try {
-            const res = await fetch("https://twitlife-production.up.railway.app/api/settings", {
+            const res = await fetch("/api/settings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ description })

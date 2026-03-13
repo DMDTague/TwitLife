@@ -31,7 +31,7 @@ export default function AdminPanel() {
 
     const fetchEntities = async () => {
         try {
-            const res = await fetch("https://twitlife-production.up.railway.app/api/admin/entities");
+            const res = await fetch("/api/admin/entities");
             const data = await res.json();
             setEntities(data.entities || []);
             log(`Loaded ${data.total_count} entities.`);
@@ -46,7 +46,7 @@ export default function AdminPanel() {
 
     const forcePulse = async () => {
         try {
-            const res = await fetch("https://twitlife-production.up.railway.app/api/admin/force_pulse", { method: "POST" });
+            const res = await fetch("/api/admin/force_pulse", { method: "POST" });
             const data = await res.json();
             log(`PULSE FIRED: ${data.active_pulse?.topic || "Unknown"}`);
         } catch (e) {
@@ -57,7 +57,7 @@ export default function AdminPanel() {
     const injectScandal = async () => {
         if (!selectedEntity || !scandalText.trim()) return;
         try {
-            const res = await fetch("https://twitlife-production.up.railway.app/api/admin/inject_scandal", {
+            const res = await fetch("/api/admin/inject_scandal", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ target_id: selectedEntity, scandal_text: scandalText }),
@@ -73,7 +73,7 @@ export default function AdminPanel() {
     const editTrait = async () => {
         if (!selectedEntity || !traitKey.trim()) return;
         try {
-            const res = await fetch("https://twitlife-production.up.railway.app/api/admin/edit_traits", {
+            const res = await fetch("/api/admin/edit_traits", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ entity_id: selectedEntity, traits: { [traitKey]: traitValue } }),
@@ -91,7 +91,7 @@ export default function AdminPanel() {
 
     const exportState = async () => {
         try {
-            const res = await fetch("https://twitlife-production.up.railway.app/api/admin/export_state");
+            const res = await fetch("/api/admin/export_state");
             const data = await res.json();
             setExportData(data);
             log(`EXPORT: ${data.total_entities} entities, ${data.total_events} events.`);
