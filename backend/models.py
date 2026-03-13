@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Literal, Optional
+from typing import Any, List, Dict, Literal, Optional
 
 class LongTermMemory(BaseModel):
     core_beliefs: List[str] = Field(default_factory=list)
@@ -49,6 +49,7 @@ class Entity(BaseModel):
     blocked_list: List[str] = Field(default_factory=list)
     muted_list: List[str] = Field(default_factory=list)
     is_dogpiled: bool = False
+    status: str = "Active"
     dogpile_end_time: float = 0.0
     
     # --- Economy & Verification (Phase 16) ---
@@ -89,7 +90,7 @@ class Entity(BaseModel):
     aura_debt_posts: int = 0
     is_griefing_account: bool = False
     unlocked_premium_avatars: bool = False
-    monthly_income_breakdown: Dict[str, any] = Field(default_factory=dict) # Phase 26: Supporter Pyramid
+    monthly_income_breakdown: Dict[str, Any] = Field(default_factory=dict) # Phase 26: Supporter Pyramid
     last_payday_day: int = 0
     t1_supporters: int = 0
     t2_supporters: int = 0
