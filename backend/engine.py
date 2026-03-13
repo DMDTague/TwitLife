@@ -1,3 +1,6 @@
+import random
+import json
+import time
 import os
 import math
 import uuid
@@ -1648,7 +1651,7 @@ You MUST output a valid JSON object matching this schema exactly:
         if not topic:
             trending = self.vibe_cache.get("trending_topics")
             if trending and random.random() < 0.7:
-                topic = random.choice(trending)["topic"]
+                topic = random.choice(trending)
             else:
                 top_domains = [d for d, v in npc.internal_truth.items() if v > 70]
                 topic = random.choice(top_domains) if top_domains else "life in Philly"
