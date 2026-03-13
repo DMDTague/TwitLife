@@ -102,19 +102,18 @@ class GameEngine:
         Tweet: "{tweet_text}"
         '''
 
-        # TRY GEMINI FIRST
-        if gemini_model:
+       # TRY GEMINI FIRST
+        if gemini_client:
             try:
-                response = gemini_model.generate_content(
-                    prompt,
-                    generation_config={"response_mime_type": "application/json"}
+                # The correct 2026 SDK Client call
+                response = gemini_client.models.generate_content(
+                    model=gemini_model,
+                    contents=prompt,
+                    config={"response_mime_type": "application/json"}
                 )
-                vectors = json.loads(response.text).get("impact_vectors", {})
-                self.rate_limiter.record_usage(400) # Simple fallback if usage tracking not in gemini
-                return vectors
+                return json.loads(response.text).get("impact_vectors", {})
             except Exception as e:
                 print(f"[ENGINE] Gemini Vibe Analysis Failed, falling back: {e}")
-
         # FALLBACK TO GROQ
         if groq_client:
             try:
