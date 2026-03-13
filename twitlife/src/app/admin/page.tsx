@@ -24,6 +24,7 @@ export default function AdminPanel() {
     const [traitKey, setTraitKey] = useState("");
     const [traitValue, setTraitValue] = useState(0);
     const [statusLog, setStatusLog] = useState<string[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [exportData, setExportData] = useState<any>(null);
 
     const log = (msg: string) => setStatusLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 19)]);
@@ -79,6 +80,7 @@ export default function AdminPanel() {
             });
             const data = await res.json();
             if (data.changes) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 log(`TRAIT EDIT on ${data.entity}: ${data.changes.map((c: any) => `${c.trait}: ${c.old} → ${c.new}`).join(", ")}`);
                 fetchEntities();
             }

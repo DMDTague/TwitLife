@@ -32,6 +32,37 @@ state = GameState()
 engine = GameEngine(state)
 
 active_connections = []
+chaos_mode_enabled = True
+
+async def chaos_pulse_daemon():
+    """
+    Phase 25: Autonomous background task that triggers NPC activity.
+    """
+    print("[CHAOS] Autonomous Loop Started.")
+    while True:
+        try:
+            if chaos_mode_enabled:
+                # Random delay to simulate organic activity
+                delay = random.randint(45, 90)
+                await asyncio.sleep(delay)
+                events = engine.orchestrate_chaos_pulse()
+                if events:
+                    print(f"[CHAOS] Triggered autonomous pulse: {len(events)} events generated.")
+            else:
+                await asyncio.sleep(30)
+        except Exception as e:
+            print(f"[CHAOS] Error in daemon: {e}")
+            await asyncio.sleep(60)
+
+@app.on_event("startup")
+async def startup_event():
+    # Phase 25: Trigger an immediate pulse in the background
+    print("[CHAOS] Booting Autonomous Network...")
+    async def run_initial_pulse():
+        await asyncio.sleep(2) # Give uvicorn a second to finish starting
+        engine.orchestrate_chaos_pulse()
+    asyncio.create_task(run_initial_pulse())
+    asyncio.create_task(chaos_pulse_daemon())
 
 @app.websocket("/ws/timeline")
 async def websocket_timeline(websocket: WebSocket):
@@ -111,8 +142,8 @@ if not saved_entities:
     db.commit()
 
     # Add some seed events
-    e1 = Event(id=str(uuid.uuid4()), type="tweet", content="Just arrived in Philadelphia! Ready to explore.", initiator_id="player_1", visibility="Public")
-    e2 = Event(id=str(uuid.uuid4()), type="tweet", content="Wawa is out of Mac and Cheese. The end is near. #Philly", initiator_id="GrittyNHL", visibility="Public")
+    e1 = Event(id=str(uuid.uuid4()), type="tweet", content="Just arrived on the timeline! Ready to explore.", initiator_id="player_1", visibility="Public")
+    e2 = Event(id=str(uuid.uuid4()), type="tweet", content="Coffee price is up again. The end is near. #Economy", initiator_id="banksy", visibility="Public")
     engine.process_action(e1)
     engine.process_action(e2)
     
@@ -250,7 +281,8 @@ def get_timeline(entity_id: str = "player_1"):
         "is_dogpiled": getattr(entity, 'is_dogpiled', False),
         "simulated_credits": getattr(entity, 'simulated_credits', 0),
         "simulation_day": getattr(engine, 'current_day', 0),
-        "simulation_era": engine.simulation_era
+        "simulation_era": engine.simulation_era,
+        "monthly_income_breakdown": getattr(entity, 'monthly_income_breakdown', {})
     }
 
 
@@ -839,7 +871,9 @@ def receive_heartbeat(background_tasks: BackgroundTasks):
             "player_aura_debt": getattr(player, "aura_debt_posts", 0) if player else 0,
             "is_griefing_account": getattr(player, "is_griefing_account", False) if player else False,
             "unlocked_premium_avatars": getattr(player, "unlocked_premium_avatars", False) if player else False,
-            "simulation_era": engine.simulation_era
+            "chaos_mode_enabled": chaos_mode_enabled,
+            "simulation_era": engine.simulation_era,
+            "monthly_income_breakdown": getattr(player, "monthly_income_breakdown", {}) if player else {}
         }
         
     return {
@@ -858,8 +892,17 @@ def receive_heartbeat(background_tasks: BackgroundTasks):
         "player_aura_debt": getattr(player, "aura_debt_posts", 0) if player else 0,
         "is_griefing_account": getattr(player, "is_griefing_account", False) if player else False,
         "unlocked_premium_avatars": getattr(player, "unlocked_premium_avatars", False) if player else False,
-        "simulation_era": engine.simulation_era
+        "chaos_mode_enabled": chaos_mode_enabled,
+        "simulation_era": engine.simulation_era,
+        "monthly_income_breakdown": getattr(player, "monthly_income_breakdown", {}) if player else {}
     }
+
+@app.post("/api/chaos/toggle")
+def toggle_chaos_mode(enabled: bool):
+    global chaos_mode_enabled
+    chaos_mode_enabled = enabled
+    print(f"[CHAOS] Toggle: {'ON' if chaos_mode_enabled else 'OFF'}")
+    return {"status": "success", "chaos_mode_enabled": chaos_mode_enabled}
 
 @app.get("/api/active_pulse")
 def get_active_pulse():

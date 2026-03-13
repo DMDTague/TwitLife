@@ -71,21 +71,17 @@ MASTER_VIBE_DICTIONARY = {
         "vegan_vs_carnivore",
         "home_cook_vs_takeout_king"
     ],
-    "philadelphia_local_lore": [
-        "trust_the_process_vs_hinkie_hater", 
-        "eagles_optimist_vs_doomsday_fan", 
-        "bryce_harper_vs_old_school_phillies", 
-        "gritty_is_god_vs_gritty_is_terrifying",
-        "center_city_vs_the_northeast", 
-        "south_philly_vs_fishtown", 
-        "jersey_shore_vs_poconos", 
-        "manayunk_wall_vs_kelly_drive",
-        "penn_energy_vs_temple_energy",
-        "septa_defender_vs_septa_hater", 
-        "broad_st_line_vs_market_frankford", 
-        "pothole_complainer_vs_pothole_survivor", 
-        "jawn_overused_vs_jawn_natural",
-        "pats_and_genos_vs_dalessandros"
+    "art_and_creative_culture": [
+        "traditional_art_vs_ai_generated", 
+        "gallery_exclusive_vs_digital_open_access", 
+        "starving_artist_vs_commercial_success", 
+        "abstract_expressionism_vs_hyper_realism",
+        "niche_mastery_vs_mass_appeal", 
+        "physical_exhibits_vs_virtual_showcases", 
+        "independent_creator_vs_studio_signed", 
+        "analog_craft_vs_digital_perfection",
+        "minimalist_design_vs_complex_ornamentation",
+        "public_art_graffiti_vs_sanitized_spaces"
     ],
     "abstract_moral_neurotic": [
         "simulation_theory_vs_hard_reality", 
@@ -121,20 +117,20 @@ def get_all_dict_keys() -> list[str]:
 
 # Swarm Ancestry DNA (-100 to 100). The rest of their traits will be -15 to +15 noise.
 FACTION_DNA = {
-    "The Main Line Influencer": {
+    "The Global Heritage Influencer": {
         "minimalist_vs_maximalist": -80,
         "fast_fashion_vs_thrifting": 90,
-        "wawa_vs_sheetz": 100,
+        "starving_artist_vs_commercial_success": 80,
         "sarcasm_irony_vs_earnestness": 85,
         "fine_dining_vs_street_food": -90,
         "sweet_tooth_vs_savory_lover": -80
     },
-    "The Delco Troll": {
-        "septa_defender_vs_septa_hater": 90,
+    "The Subversive Troll": {
+        "independent_creator_vs_studio_signed": 90,
         "empathetic_vs_logic_only": 85,
         "conflict_seeker_vs_people_pleaser": -95,
-        "wawa_vs_sheetz": -100,
-        "pats_and_genos_vs_dalessandros": 85
+        "traditional_art_vs_ai_generated": -100,
+        "public_art_graffiti_vs_sanitized_spaces": 85
     },
     "The Tech Visionary": {
         "apple_ecosystem_vs_android_freedom": -95,
@@ -149,12 +145,10 @@ FACTION_DNA = {
         "sarcasm_irony_vs_earnestness": 100,
         "thread_maker_vs_shit_poster": -90
     },
-    "The Philly Doomer": {
+    "The Global Doomer": {
         "optimist_vs_doomer_nihilist": 90,
-        "septa_defender_vs_septa_hater": 85,
-        "pothole_complainer_vs_pothole_survivor": -80,
-        "trust_the_process_vs_hinkie_hater": 70,
-        "eagles_optimist_vs_doomsday_fan": 90
+        "independent_creator_vs_studio_signed": 85,
+        "starving_artist_vs_commercial_success": -80
     }
 }
 
@@ -164,9 +158,9 @@ FACTION_ANCHORS = {
     "Liberal Hollywood": [("feminism", 85), ("lgbtq", 90), ("celebrity_activism", 70)],
     "Libertarian Tech Bros": [("free_speech_absolutist", 95), ("crypto", 80), ("anti_regulation", 75)],
     "Comedy Central": [("irony_max", 90), ("cancel_culture_skeptic", 70), ("absurd_humor", 95)],
-    "Philly Doomer": [], 
-    "Delco Troll": [],
-    "Main Line Influencer": []
+    "Global Doomer": [], 
+    "Subversive Troll": [],
+    "Heritage Influencer": []
 }
 
 # The Fixed Titans of the Simulation
@@ -201,33 +195,33 @@ CELEBRITY_REGISTRY = {
 # Each hub defines the faction tags that "belong" there, anchor traits to vibe-check outsiders,
 # and the hostility multiplier applied when an outsider posts in the wrong neighborhood.
 NEIGHBORHOOD_HUBS = {
-    "Fishtown": {
-        "description": "Philly's artistic & DIY hub. Anti-corporate, pro-weird.",
-        "allowed_tags": ["The_Philly_Doomer", "The_Delco_Troll", "Fishtown"],
+    "The Gallery District": {
+        "description": "The artistic & creative epicenter. Pro-originality, anti-corporate.",
+        "allowed_tags": ["The_Global_Doomer", "The_Subversive_Troll", "Artist"],
         "vibe_anchors": {
-            "south_philly_vs_fishtown": (50, 100),       # Must lean Fishtown
-            "hustle_culture_vs_quiet_quitting": (20, 100), # Anti-hustle
-            "minimalist_vs_maximalist": (-100, -20),       # Maximalist/eclectic
+            "individual_creator_vs_studio_signed": (50, 100),
+            "traditional_art_vs_ai_generated": (-100, -20),
+            "minimalist_design_vs_complex_ornamentation": (-100, -20),
         },
         "outsider_hostility_bonus": 40,
     },
-    "The Northeast": {
-        "description": "Old-school Philly. Blue collar, no-nonsense, Eagles or die.",
-        "allowed_tags": ["The_Delco_Troll", "The_Philly_Doomer", "The_Northeast"],
+    "The Industrial Hub": {
+        "description": "Blue-collar, tech-adjacent manufacturing and legacy industries.",
+        "allowed_tags": ["The_Subversive_Troll", "The_Global_Doomer", "Industrial"],
         "vibe_anchors": {
-            "center_city_vs_the_northeast": (50, 100),     # Must lean Northeast
-            "eagles_optimist_vs_doomsday_fan": (-100, -30), # Die-hard fan energy
-            "craft_beer_vs_domestic_light": (30, 100),      # Domestic light drinkers
+            "pc_master_race_vs_console_peasant": (50, 100),
+            "smart_home_vs_analog": (-100, -30),
+            "routine_vs_spontaneity": (30, 100),
         },
         "outsider_hostility_bonus": 50,
     },
-    "Main Line": {
-        "description": "Wealthy suburbs. Tech bros, influencers, and brunch culture.",
-        "allowed_tags": ["The_Main_Line_Influencer", "The_Tech_Visionary", "Main_Line"],
+    "The Financial Plaza": {
+        "description": "The elite financial and technological core. High stakes, high polish.",
+        "allowed_tags": ["The_Heritage_Influencer", "The_Tech_Visionary", "Financial"],
         "vibe_anchors": {
-            "fine_dining_vs_street_food": (-100, -40),      # Fine dining preferred
-            "fast_fashion_vs_thrifting": (50, 100),          # High fashion
-            "comfort_sweats_vs_high_fashion": (40, 100),     # High fashion
+            "fine_dining_vs_street_food": (-100, -40),
+            "fast_fashion_vs_thrifting": (50, 100),
+            "comfort_sweats_vs_high_fashion": (40, 100),
         },
         "outsider_hostility_bonus": 30,
     },

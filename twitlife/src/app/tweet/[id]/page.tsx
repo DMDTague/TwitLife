@@ -37,7 +37,9 @@ export default function TweetDetail() {
     const params = useParams();
     const router = useRouter();
     const tweetId = params.id as string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [tweet, setTweet] = useState<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [replies, setReplies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [replyContent, setReplyContent] = useState("");
@@ -94,12 +96,13 @@ export default function TweetDetail() {
         setPosting(false);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ReplyActions = ({ post }: { post: any }) => {
         const isLiked = likedPosts.has(post.id);
         const isRT = retweetedPosts.has(post.id);
         return (
             <div className="flex justify-between items-center mt-2 max-w-[425px] -ml-2">
-                <button onClick={() => router.push(`/tweet/${post.id}`)} className="action-reply flex items-center gap-0.5 text-[#71767B] transition-colors">
+                <button onClick={() => { router.push(`/tweet/${post.id}`); }} className="action-reply flex items-center gap-0.5 text-[#71767B] transition-colors">
                     <div className="action-icon p-2 rounded-full transition"><MessageCircle className="w-[18px] h-[18px]" /></div>
                     <span className="text-[13px]">{post.replies_count || ''}</span>
                 </button>
@@ -213,7 +216,7 @@ export default function TweetDetail() {
                     <img src={getAvatar(identity?.handle || "player_1")} className="w-10 h-10 rounded-full shrink-0 mt-1" alt="" />
                     <div className="flex-1">
                         <p className="text-[15px] text-[#71767B] mb-1">Replying to <span className="text-[#1D9BF0]">@{tweet.initiator_id}</span></p>
-                        <textarea value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Post your reply"
+                        <textarea value={replyContent} onChange={e => { setReplyContent(e.target.value); }} placeholder="Post your reply"
                             className="w-full bg-transparent text-[17px] text-[#E7E9EA] outline-none resize-none py-2 placeholder-[#536471]" rows={2} />
                         <div className="flex justify-end pt-1">
                             <button onClick={handlePostReply} disabled={!replyContent.trim() || posting}
@@ -228,7 +231,7 @@ export default function TweetDetail() {
                         <div className="p-12 text-center text-[#71767B] text-[15px]">No replies yet. Be the first to respond!</div>
                     ) : (
                         replies.map(reply => (
-                            <div key={reply.id} className="tweet-hover flex gap-3 px-4 py-3 border-b border-[#2F3336] cursor-pointer" onClick={() => router.push(`/tweet/${reply.id}`)}>
+                            <div key={reply.id} className="tweet-hover flex gap-3 px-4 py-3 border-b border-[#2F3336] cursor-pointer" onClick={() => { router.push(`/tweet/${reply.id}`); }}>
                                 <div className="shrink-0">
                                     <Link href={`/profile/${reply.initiator_id}`} onClick={e => e.stopPropagation()}>
                                         <img src={getAvatar(reply.initiator_id)} className="w-10 h-10 rounded-full hover:opacity-80 transition" alt="" />
