@@ -1,10 +1,2 @@
-fastapi
-uvicorn
-sqlalchemy
-pydantic
-python-multipart
-python-dotenv
-openai
-numpy
-pandas
-google-genai
+SQLAlchemy==2.0.48
+typing_extensions==4.15.0
